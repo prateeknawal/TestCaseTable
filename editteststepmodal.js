@@ -9,12 +9,12 @@ import {
   Button,
   TextField,
   MenuItem,
-  Box
+  Box,
+  Typography
 } from '@mui/material';
 
 export default function EditTestStepModal({ open, stepData, onClose, onSave }) {
   const [formState, setFormState] = useState({
-    teststep_orderid: '',
     teststep_steps: '',
     teststep_expected_result: '',
     teststep_actual_result: '',
@@ -41,43 +41,66 @@ export default function EditTestStepModal({ open, stepData, onClose, onSave }) {
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle>Edit Test Step</DialogTitle>
-      <DialogContent>
-        <Box display="flex" flexDirection="column" gap={2} mt={1}>
+      <DialogTitle sx={{ fontWeight: 600, fontSize: '1.25rem' }}>
+        Edit Test Step
+      </DialogTitle>
+
+      <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 3 }}>
+        <Box>
+          <Typography variant="subtitle2" gutterBottom>
+            Test Step
+          </Typography>
           <TextField
-            label="Test Step"
             name="teststep_steps"
             value={formState.teststep_steps}
             onChange={handleChange}
-            fullWidth
             multiline
-            rows={2}
+            rows={3}
+            fullWidth
+            placeholder="Enter the action/step to be performed"
           />
+        </Box>
+
+        <Box>
+          <Typography variant="subtitle2" gutterBottom>
+            Expected Result
+          </Typography>
           <TextField
-            label="Expected Result"
             name="teststep_expected_result"
             value={formState.teststep_expected_result}
             onChange={handleChange}
-            fullWidth
             multiline
-            rows={2}
+            rows={3}
+            fullWidth
+            placeholder="What should happen if the step succeeds?"
           />
+        </Box>
+
+        <Box>
+          <Typography variant="subtitle2" gutterBottom>
+            Actual Result
+          </Typography>
           <TextField
-            label="Actual Result"
             name="teststep_actual_result"
             value={formState.teststep_actual_result}
             onChange={handleChange}
-            fullWidth
             multiline
-            rows={2}
+            rows={3}
+            fullWidth
+            placeholder="What actually happened during testing?"
           />
+        </Box>
+
+        <Box>
+          <Typography variant="subtitle2" gutterBottom>
+            Status
+          </Typography>
           <TextField
-            label="Status"
             name="teststep_status"
             value={formState.teststep_status || ''}
             onChange={handleChange}
-            fullWidth
             select
+            fullWidth
           >
             <MenuItem value="Pending">Pending</MenuItem>
             <MenuItem value="Pass">Pass</MenuItem>
@@ -85,9 +108,14 @@ export default function EditTestStepModal({ open, stepData, onClose, onSave }) {
           </TextField>
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} variant="outlined">Cancel</Button>
-        <Button onClick={handleSave} variant="contained" color="primary">Save</Button>
+
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={onClose} variant="text" sx={{ fontWeight: 500 }}>
+          Cancel
+        </Button>
+        <Button onClick={handleSave} variant="contained" sx={{ fontWeight: 500 }}>
+          Save Changes
+        </Button>
       </DialogActions>
     </Dialog>
   );
