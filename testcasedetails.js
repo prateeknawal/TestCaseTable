@@ -8,6 +8,31 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 
 export default function TestCaseDetails({ testCase }) {
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingStep, setEditingStep] = useState(null);
+
+  if (!testCase || !Array.isArray(testCase.teststeps) || testCase.teststeps.length === 0) {
+    return <Box sx={{ p: 2 }}>No test case details available.</Box>;
+  }
+
+  const handleEditClick = (step) => {
+    setEditingStep(step);
+    setEditModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setEditingStep(null);
+    setEditModalOpen(false);
+  };
+
+  const handleSaveStep = (updatedStep) => {
+    const updatedSteps = testCase.teststeps.map((step) =>
+      step.teststep_orderid === updatedStep.teststep_orderid ? updatedStep : step
+    );
+    testCase.teststeps = updatedSteps;
+    setEditingStep(null);
+    setEditModalOpen(false);
+  };
   const columns = [
     {
       field: 'step',
@@ -45,10 +70,13 @@ export default function TestCaseDetails({ testCase }) {
       headerName: 'Actions',
       width: 100,
       sortable: false,
-      renderCell: () => (
+      renderCell: (params) => (
         <>
-          <IconButton><EditIcon fontSize="small" /></IconButton>
-          <IconButton><DeleteIcon fontSize="small" /></IconButton>
+          <IconButton onClick={() => handleEditClick(params.row)}>
+            <EditIcon fontSize="small" />
+          </IconButton>
+          {/* Future Delete button can go here */}
+          {/* <IconButton><DeleteIcon fontSize="small" /></IconButton> */}
         </>
       ),
     },
@@ -82,6 +110,14 @@ export default function TestCaseDetails({ testCase }) {
           pagination: { paginationModel: { pageSize: 10 } },
         }}
       />
+      {editModalOpen && editingStep && (
+        <EditTestStepModal
+          open={editModalOpen}
+          stepData={editingStep}
+          onClose={handleCloseModal}
+          onSave={handleSaveStep}
+        />
+      )}
     </Box>
   );
 }
