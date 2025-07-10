@@ -10,19 +10,105 @@ export default function TestCaseTable({ selectedUserStory, setTestCasesData }) {
   const [selectedTestCase, setSelectedTestCase] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const refreshTestCases = useCallback(async () => {
+  // const refreshTestCases = useCallback(async () => {
+  //   if (!selectedUserStory) return;
+
+  //   const userStoryId = selectedUserStory.id.split('-').pop();
+
+  //   try {
+  //     const response = await fetch(
+  //       `http://127.0.0.1:8000/user-stories/${userStoryId}/test-cases`,
+  //       {
+  //         method: 'GET',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           'x-user-soeid': 'pn03489',
+  //         },
+  //       }
+  //     );
+
+  //     if (response.status === 404) {
+  //       setTestCases([]);
+  //       setTestCasesData([]);
+  //       return;
+  //     }
+
+  //     if (!response.ok) {
+  //       const errorText = await response.text();
+  //       throw new Error(`HTTP error ${response.status}: ${errorText}`);
+  //     }
+
+  //     const data = await response.json();
+  //     const list = data.test_cases ?? [];
+
+  //     // Group test steps under unique test case IDs
+  //     const groupedTestCases = Object.values(
+  //       list.reduce((acc, tc, index) => {
+  //         const id = tc['testcase_id'];
+  //         if (!acc[id]) {
+  //           acc[id] = {
+  //             id,
+  //             created_by: tc['test_case_creator'],
+  //             created_at: tc['testcase_created_at'],
+  //             description: tc['testcase_description'],
+  //             test_case_id: id,
+  //             priority: tc['testcase_priority'],
+  //             status: tc['testcase_status'],
+  //             title: tc['testcase_title'] || `Untitled Test Case ${index + 1}`,
+  //             test_case_type: tc['testcase_type'],
+  //             llm_name: tc['LLM Name'],
+  //             action_name: tc['Action Name'],
+  //             current_iteration_id: tc['Current Iteration ID'],
+  //             user_prompt: tc['User Prompt'],
+  //             test_steps: [],
+  //           };
+  //         }
+
+  //         acc[id].test_steps.push({
+  //           step: tc['teststep_steps'],
+  //           expected_result: tc['teststep_expected_result'],
+  //           actual_result: tc['teststep_actual_result'],
+  //           status: tc['teststep_status'],
+  //         });
+
+  //         return acc;
+  //       }, {})
+  //     );
+
+  //     setTestCases(groupedTestCases);
+  //     setTestCasesData(groupedTestCases);
+  //   } catch (error) {
+  //     if (!error.message.includes('404')) {
+  //       console.error('Error fetching test cases:', error.message);
+  //     }
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, [selectedUserStory, setTestCasesData]);
+
+  // useEffect(() => {
+  //   refreshTestCases();
+  // }, [refreshTestCases]);
+
+  // const handleRowClick = (params) => {
+  //   const selected = testCases.find((tc) => tc.id === params.row.id);
+  //   setSelectedTestCase(selected);
+  // };
+const refreshTestCases = useCallback(async () => {
     if (!selectedUserStory) return;
 
-    const userStoryId = selectedUserStory.id.split('-').pop();
+    const userStoryId = selectedUserStory.id?.split("--").pop();
+    if (!userStoryId) return;
 
     try {
+      setLoading(true);
       const response = await fetch(
-        `http://127.0.0.1:8000/user-stories/${userStoryId}/test-cases`,
+        `/user-stories/${userStoryId}/test-cases`,
         {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'x-user-soeid': 'pn03489',
+            'x-user-ssoid': 'pm3409',
           },
         }
       );
@@ -34,51 +120,18 @@ export default function TestCaseTable({ selectedUserStory, setTestCasesData }) {
       }
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error ${response.status}: ${errorText}`);
+        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
-      const list = data.test_cases ?? [];
+      console.log('Fetched raw test case data from API:', data);
 
-      // Group test steps under unique test case IDs
-      const groupedTestCases = Object.values(
-        list.reduce((acc, tc, index) => {
-          const id = tc['testcase_id'];
-          if (!acc[id]) {
-            acc[id] = {
-              id,
-              created_by: tc['test_case_creator'],
-              created_at: tc['testcase_created_at'],
-              description: tc['testcase_description'],
-              test_case_id: id,
-              priority: tc['testcase_priority'],
-              status: tc['testcase_status'],
-              title: tc['testcase_title'] || `Untitled Test Case ${index + 1}`,
-              test_case_type: tc['testcase_type'],
-              llm_name: tc['LLM Name'],
-              action_name: tc['Action Name'],
-              current_iteration_id: tc['Current Iteration ID'],
-              user_prompt: tc['User Prompt'],
-              test_steps: [],
-            };
-          }
+      const testCasesList = data.test_cases || [];
 
-          acc[id].test_steps.push({
-            step: tc['teststep_steps'],
-            expected_result: tc['teststep_expected_result'],
-            actual_result: tc['teststep_actual_result'],
-            status: tc['teststep_status'],
-          });
-
-          return acc;
-        }, {})
-      );
-
-      setTestCases(groupedTestCases);
-      setTestCasesData(groupedTestCases);
+      setTestCases(testCasesList);
+      setTestCasesData(testCasesList);
     } catch (error) {
-      if (!error.message.includes('404')) {
+      if (error.message.includes("404")) {
         console.error('Error fetching test cases:', error.message);
       }
     } finally {
@@ -92,9 +145,11 @@ export default function TestCaseTable({ selectedUserStory, setTestCasesData }) {
 
   const handleRowClick = (params) => {
     const selected = testCases.find((tc) => tc.id === params.row.id);
+    if (!selected) {
+      console.warn('No matching test case found for row ID:', params.row.id);
+    }
     setSelectedTestCase(selected);
   };
-
 
   
   return (
