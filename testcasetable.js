@@ -1,16 +1,18 @@
-// TestCaseTable.js (Updated with correct API)
-import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Grid, CircularProgress } from '@mui/material';
+'use client';
+
+import React, { useCallback, useEffect, useState } from 'react';
+import { Box, Grid } from '@mui/material';
 import TestCaseList from './TestCaseList';
 import TestCaseDetails from './TestCaseDetails';
 
 export default function TestCaseTable({ selectedUserStory, setTestCasesData }) {
   const [testCases, setTestCases] = useState([]);
   const [selectedTestCase, setSelectedTestCase] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const refreshTestCases = useCallback(async () => {
     if (!selectedUserStory) return;
+
     const userStoryId = selectedUserStory.id.split('-').pop();
 
     try {
@@ -37,41 +39,44 @@ export default function TestCaseTable({ selectedUserStory, setTestCasesData }) {
       }
 
       const data = await response.json();
-      console.log('Fetched test cases data from API:', data);
+      const list = data.test_cases ?? [];
 
-      const testCases = data.test_cases ?? [];
+      // Group test steps under unique test case IDs
+      const groupedTestCases = Object.values(
+        list.reduce((acc, tc, index) => {
+          const id = tc['testcase_id'];
+          if (!acc[id]) {
+            acc[id] = {
+              id,
+              created_by: tc['test_case_creator'],
+              created_at: tc['testcase_created_at'],
+              description: tc['testcase_description'],
+              test_case_id: id,
+              priority: tc['testcase_priority'],
+              status: tc['testcase_status'],
+              title: tc['testcase_title'] || `Untitled Test Case ${index + 1}`,
+              test_case_type: tc['testcase_type'],
+              llm_name: tc['LLM Name'],
+              action_name: tc['Action Name'],
+              current_iteration_id: tc['Current Iteration ID'],
+              user_prompt: tc['User Prompt'],
+              test_steps: [],
+            };
+          }
 
-      // Group by testcase_id (one entry per unique test case)
-      const groupedMap = new Map();
-
-      for (const tc of testCases) {
-        const id = tc['testcase_id'];
-        if (!groupedMap.has(id)) {
-          groupedMap.set(id, {
-            id: id || testCases.indexOf(tc),
-            created_by: tc['test_case_creator'],
-            created_at: tc['testcase_created_at'],
-            description: tc['testcase_description'],
-            test_case_id: id,
-            priority: tc['testcase_priority'],
-            status: tc['testcase_status'],
-            title: tc['testcase_title'] || `Untitled Test Case ${testCases.indexOf(tc) + 1}`,
-            test_case_type: tc['testcase_type'],
-            test_step_actual_result: tc['teststep_actual_result'],
+          acc[id].test_steps.push({
+            step: tc['teststep_steps'],
             expected_result: tc['teststep_expected_result'],
-            test_step_status: tc['teststep_status'],
-            test_step_steps: tc['teststep_steps'],
-            llm_name: tc['LLM Name'],
-            action_name: tc['Action Name'],
-            current_iteration_id: tc['Current Iteration ID'],
-            user_prompt: tc['User Prompt'],
+            actual_result: tc['teststep_actual_result'],
+            status: tc['teststep_status'],
           });
-        }
-      }
 
-      const uniqueTestCases = Array.from(groupedMap.values());
+          return acc;
+        }, {})
+      );
 
-      setTestCasesData(uniqueTestCases);
+      setTestCases(groupedTestCases);
+      setTestCasesData(groupedTestCases);
     } catch (error) {
       if (!error.message.includes('404')) {
         console.error('Error fetching test cases:', error.message);
@@ -85,12 +90,8 @@ export default function TestCaseTable({ selectedUserStory, setTestCasesData }) {
     refreshTestCases();
   }, [refreshTestCases]);
 
-  useEffect(() => {
-    refreshTestCases();
-  }, [refreshTestCases]);
-
   const handleRowClick = (params) => {
-    const selected = testCases.find(tc => tc.id === params.row.id);
+    const selected = testCases.find((tc) => tc.id === params.row.id);
     setSelectedTestCase(selected);
   };
 
@@ -98,11 +99,11 @@ export default function TestCaseTable({ selectedUserStory, setTestCasesData }) {
     <Box p={2}>
       <Grid container spacing={2}>
         <Grid item xs={4}>
-          {loading ? (
-            <CircularProgress />
-          ) : (
-            <TestCaseList testCases={testCases} onRowClick={handleRowClick} />
-          )}
+          <TestCaseList
+            testCases={testCases}
+            onRowClick={handleRowClick}
+            selectedRowId={selectedTestCase?.id}
+          />
         </Grid>
         <Grid item xs={8}>
           {selectedTestCase ? (
@@ -114,4 +115,4 @@ export default function TestCaseTable({ selectedUserStory, setTestCasesData }) {
       </Grid>
     </Box>
   );
-};
+}
