@@ -144,12 +144,24 @@ const refreshTestCases = useCallback(async () => {
   }, [refreshTestCases]);
 
   const handleRowClick = (params) => {
-    const selected = testCases.find((tc) => tc.id === params.row.id);
-    if (!selected) {
-      console.warn('No matching test case found for row ID:', params.row.id);
-    }
-    setSelectedTestCase(selected);
-  };
+  console.log("📌 Raw click params:", params);
+
+  const rowId = params?.row?.id ?? params?.id; // Fall back to .id directly
+  console.log("🧩 Extracted row ID:", rowId);
+
+  // Log testCases to confirm structure
+  console.log("📦 Available testCases:", testCases);
+
+  const selected = testCases.find(tc => String(tc.testcase_id) === String(rowId));
+  
+  if (!selected) {
+    console.warn("❗ No matching test case found for ID:", rowId);
+    return;
+  }
+
+  setSelectedTestCase(selected);
+  console.log("✅ Selected test case:", selected);
+};
 
   
   return (
