@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Box, Grid } from '@mui/material';
+import { Box, Stack, Paper } from '@mui/material';
 import TestCaseList from './TestCaseList';
 import TestCaseDetails from './TestCaseDetails';
 
@@ -97,22 +97,23 @@ export default function TestCaseTable({ selectedUserStory, setTestCasesData }) {
 
   return (
     <Box p={2}>
-      <Grid container spacing={2}>
-        <Grid item xs={4}>
+      <Stack direction="row" spacing={2}>
+        <Paper sx={{ flex: 4, border: '1px solid #ccc', borderRadius: 1 }}>
           <TestCaseList
             testCases={testCases}
             onRowClick={handleRowClick}
             selectedRowId={selectedTestCase?.id}
           />
-        </Grid>
-        <Grid item xs={8}>
+        </Paper>
+
+        <Paper sx={{ flex: 8, border: '1px solid #ccc', borderRadius: 1 }}>
           {selectedTestCase ? (
             <TestCaseDetails testCase={selectedTestCase} />
           ) : (
-            <Box>Select a test case to view its steps</Box>
+            <Box p={2}>🔍 Select a test case to view its steps</Box>
           )}
-        </Grid>
-      </Grid>
+        </Paper>
+      </Stack>
     </Box>
   );
 }
