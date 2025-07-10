@@ -95,22 +95,43 @@ export default function TestCaseTable({ selectedUserStory, setTestCasesData }) {
     setSelectedTestCase(selected);
   };
 
+
   
   return (
-    <Box p={2}>
-      <Stack direction="row" spacing={2} alignItems="flex-start">
-        <Paper sx={{ flex: 4 }}>
+    <Box sx={{ width: '100%', p: 2 }}>
+      <Stack direction="row" spacing={2} alignItems="flex-start" sx={{ flexWrap: 'wrap' }}>
+        {/* Left: Test Case List */}
+        <Paper
+          elevation={1}
+          sx={{
+            flex: 1,
+            minWidth: 500,
+            maxWidth: '48%',
+            overflowX: 'auto',
+          }}
+        >
           <TestCaseList
             testCases={testCases}
             onRowClick={handleRowClick}
             selectedRowId={selectedTestCase?.id}
           />
         </Paper>
-        <Paper sx={{ flex: 8 }}>
+
+        {/* Right: Test Case Details */}
+        <Paper
+          elevation={1}
+          sx={{
+            flex: 1,
+            minWidth: 500,
+            maxWidth: '48%',
+            overflowX: 'auto',
+            height: 'auto', // dynamic height
+          }}
+        >
           {selectedTestCase ? (
             <TestCaseDetails testCase={selectedTestCase} />
           ) : (
-            <Box p={2}>🔍 Select a test case to view its steps.</Box>
+            <Box sx={{ p: 2 }}>Select a test case to view its steps.</Box>
           )}
         </Paper>
       </Stack>
