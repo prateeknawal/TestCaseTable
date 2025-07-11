@@ -1,144 +1,133 @@
-import React, { useEffect, useState } from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   Button,
+  TextField,
   MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
+  Box,
+  Typography
 } from '@mui/material';
 
-const EditTestStepModal = ({
-  open,
-  handleClose,
-  testStep,
-  testCaseId,
-  orderId,
-  userSoeid,
-  onTestStepUpdated,
-}) => {
-  const [stepData, setStepData] = useState('');
-  const [expectedResult, setExpectedResult] = useState('');
-  const [actualResult, setActualResult] = useState('');
+export default function EditTestStepModal({ open, stepData, testCaseId, orderId, onClose, onSave }) {
+  const [formState, setFormState] = useState({
+    teststep_steps: '',
+    teststep_expected_result: '',
+    teststep_actual_result: '',
+    teststep_status: '',
+  });
+
   const [statusOptions, setStatusOptions] = useState([]);
-  const [selectedStatus, setSelectedStatus] = useState('');
 
   useEffect(() => {
-    if (testStep) {
-      setStepData(testStep.test_step);
-      setExpectedResult(testStep.expected_result);
-      setActualResult(testStep.actual_result);
-      setSelectedStatus(testStep.test_step_status);
+    if (stepData) {
+      setFormState({
+        teststep_steps: stepData.teststep_steps || '',
+        teststep_expected_result: stepData.teststep_expected_result || '',
+        teststep_actual_result: stepData.teststep_actual_result || '',
+        teststep_status: stepData.teststep_status || '',
+      });
     }
-  }, [testStep]);
+  }, [stepData]);
 
   useEffect(() => {
-    const fetchStatuses = async () => {
+    const fetchStatusOptions = async () => {
       try {
-        const res = await fetch('/api/test-step/test-step-status', {
+        const res = await fetch('http://127.0.0.1:8000/api/test-step/test-step-status', {
           headers: {
             'Content-Type': 'application/json',
-            'x-user-soeid': userSoeid,
+            'x-user-soeid': 'your-soeid-here',
           },
         });
-        const statuses = await res.json();
-        setStatusOptions(statuses);
-      } catch (err) {
-        console.error('Error fetching statuses:', err);
+        const data = await res.json();
+        setStatusOptions(data);
+      } catch (error) {
+        console.error('Failed to load status options:', error);
       }
     };
+    fetchStatusOptions();
+  }, []);
 
-    fetchStatuses();
-  }, [userSoeid]);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormState(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleSave = async () => {
-    const statusObj = statusOptions.find(
-      (option) => option.test_step_status === selectedStatus
-    );
-
-    if (!statusObj) {
-      alert('Please select a valid status.');
-      return;
-    }
+    const selectedStatus = statusOptions.find(opt => opt.status_name === formState.teststep_status);
+    const statusId = selectedStatus ? selectedStatus.status_id : '';
 
     try {
-      const url = `/api/test-step/edit/${testCaseId}/${orderId}?test_step_data=${encodeURIComponent(
-        stepData
-      )}&expected_result_data=${encodeURIComponent(
-        expectedResult
-      )}&actual_result_data=${encodeURIComponent(
-        actualResult
-      )}&test_step_status=${statusObj.id}`;
+      await fetch(`http://127.0.0.1:8000/test-step/edit/${testCaseId}/${orderId}?` +
+        new URLSearchParams({
+          test_step_data: formState.teststep_steps,
+          expected_result_data: formState.teststep_expected_result,
+          actual_result_data: formState.teststep_actual_result,
+          test_step_status: statusId,
+        }),
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-soeid': 'your-soeid-here',
+          },
+        });
 
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-soeid': userSoeid,
-        },
-      });
-
-      if (!res.ok) throw new Error('Failed to update test step');
-
-      onTestStepUpdated();
-      handleClose();
+      onSave(formState);
+      onClose();
     } catch (err) {
-      console.error('Error saving test step:', err);
+      console.error('Failed to update test step:', err);
     }
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>Edit Test Step</DialogTitle>
-      <DialogContent>
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+      <DialogTitle sx={{ fontWeight: 600, fontSize: '1.25rem' }}>Edit Test Step</DialogTitle>
+      <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 3 }}>
         <TextField
-          fullWidth
           label="Test Step"
-          value={stepData}
-          onChange={(e) => setStepData(e.target.value)}
-          margin="dense"
+          name="teststep_steps"
+          value={formState.teststep_steps}
+          onChange={handleChange}
+          fullWidth
         />
         <TextField
-          fullWidth
           label="Expected Result"
-          value={expectedResult}
-          onChange={(e) => setExpectedResult(e.target.value)}
-          margin="dense"
-        />
-        <FormControl fullWidth margin="dense">
-          <InputLabel>Status</InputLabel>
-          <Select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            label="Status"
-          >
-            {statusOptions.map((option) => (
-              <MenuItem key={option.id} value={option.test_step_status}>
-                {option.test_step_status}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <TextField
+          name="teststep_expected_result"
+          value={formState.teststep_expected_result}
+          onChange={handleChange}
           fullWidth
+        />
+        <TextField
+          label="Status"
+          name="teststep_status"
+          value={formState.teststep_status}
+          onChange={handleChange}
+          select
+          fullWidth
+        >
+          {statusOptions.map((option) => (
+            <MenuItem key={option.status_id} value={option.status_name}>
+              {option.status_name}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
           label="Actual Result"
-          value={actualResult}
-          onChange={(e) => setActualResult(e.target.value)}
-          margin="dense"
+          name="teststep_actual_result"
+          value={formState.teststep_actual_result}
+          onChange={handleChange}
+          fullWidth
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
-        <Button onClick={handleSave} variant="contained">
-          Save Changes
-        </Button>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={handleSave} variant="contained">Save Changes</Button>
       </DialogActions>
     </Dialog>
   );
-};
-
-export default EditTestStepModal;
+}
