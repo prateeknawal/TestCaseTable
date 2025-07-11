@@ -4,126 +4,121 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
   TextField,
-  Select,
+  Button,
   MenuItem,
-  InputLabel,
+  Select,
   FormControl,
+  InputLabel,
 } from '@mui/material';
 
-const EditTestStepModal = ({ open, handleClose, testStep, onSave }) => {
-  const [editedStep, setEditedStep] = useState({
-    test_step: '',
-    expected_result: '',
-    status: '',
-    actual_result: '',
-  });
+const EditTestStepModal = ({
+  open,
+  handleClose,
+  testStep,
+  testCaseId,
+  orderId,
+  userSoeid,
+  onTestStepUpdated,
+}) => {
+  const [stepData, setStepData] = useState('');
+  const [expectedResult, setExpectedResult] = useState('');
+  const [actualResult, setActualResult] = useState('');
   const [statusOptions, setStatusOptions] = useState([]);
+  const [selectedStatus, setSelectedStatus] = useState('');
 
   useEffect(() => {
     if (testStep) {
-      setEditedStep({
-        test_step: testStep.test_step || '',
-        expected_result: testStep.expected_result || '',
-        status: testStep.teststep_status || '',
-        actual_result: testStep.actual_result || '',
-      });
+      setStepData(testStep.test_step);
+      setExpectedResult(testStep.expected_result);
+      setActualResult(testStep.actual_result);
+      setSelectedStatus(testStep.test_step_status);
     }
   }, [testStep]);
 
   useEffect(() => {
-    const fetchStatusOptions = async () => {
+    const fetchStatuses = async () => {
       try {
-        const response = await fetch('/api/test-step/test-step-status', {
-          method: 'GET',
+        const res = await fetch('/api/test-step/test-step-status', {
           headers: {
             'Content-Type': 'application/json',
-            'x-user-soeid': sessionStorage.getItem('soeid') || '',
+            'x-user-soeid': userSoeid,
           },
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch status options');
-        }
-
-        const data = await response.json();
-        setStatusOptions(data);
-      } catch (error) {
-        console.error('Error fetching status options:', error);
+        const statuses = await res.json();
+        setStatusOptions(statuses);
+      } catch (err) {
+        console.error('Error fetching statuses:', err);
       }
     };
 
-    fetchStatusOptions();
-  }, []);
-
-  const handleInputChange = (field) => (event) => {
-    setEditedStep({ ...editedStep, [field]: event.target.value });
-  };
+    fetchStatuses();
+  }, [userSoeid]);
 
   const handleSave = async () => {
-    const selectedStatus = statusOptions.find(
-      (option) => option.status_name === editedStep.status
+    const statusObj = statusOptions.find(
+      (option) => option.test_step_status === selectedStatus
     );
 
-    const payload = {
-      test_case_id: testStep.test_case_id,
-      order_id: testStep.order_id,
-      test_step: editedStep.test_step,
-      expected_result: editedStep.expected_result,
-      actual_result: editedStep.actual_result,
-      teststep_status_id: selectedStatus?.id || null,
-    };
+    if (!statusObj) {
+      alert('Please select a valid status.');
+      return;
+    }
 
     try {
-      const response = await fetch('/api/test-step/test-step-edit', {
+      const url = `/api/test-step/edit/${testCaseId}/${orderId}?test_step_data=${encodeURIComponent(
+        stepData
+      )}&expected_result_data=${encodeURIComponent(
+        expectedResult
+      )}&actual_result_data=${encodeURIComponent(
+        actualResult
+      )}&test_step_status=${statusObj.id}`;
+
+      const res = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-soeid': sessionStorage.getItem('soeid') || '',
+          'x-user-soeid': userSoeid,
         },
-        body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to update test step');
-      }
+      if (!res.ok) throw new Error('Failed to update test step');
 
-      onSave();
+      onTestStepUpdated();
       handleClose();
-    } catch (error) {
-      console.error('Error updating test step:', error);
+    } catch (err) {
+      console.error('Error saving test step:', err);
     }
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
+    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
       <DialogTitle>Edit Test Step</DialogTitle>
       <DialogContent>
         <TextField
           fullWidth
           label="Test Step"
-          value={editedStep.test_step}
-          onChange={handleInputChange('test_step')}
+          value={stepData}
+          onChange={(e) => setStepData(e.target.value)}
           margin="dense"
         />
         <TextField
           fullWidth
           label="Expected Result"
-          value={editedStep.expected_result}
-          onChange={handleInputChange('expected_result')}
+          value={expectedResult}
+          onChange={(e) => setExpectedResult(e.target.value)}
           margin="dense"
         />
         <FormControl fullWidth margin="dense">
           <InputLabel>Status</InputLabel>
           <Select
-            value={editedStep.status}
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
             label="Status"
-            onChange={handleInputChange('status')}
           >
             {statusOptions.map((option) => (
-              <MenuItem key={option.id} value={option.status_name}>
-                {option.status_name}
+              <MenuItem key={option.id} value={option.test_step_status}>
+                {option.test_step_status}
               </MenuItem>
             ))}
           </Select>
@@ -131,14 +126,14 @@ const EditTestStepModal = ({ open, handleClose, testStep, onSave }) => {
         <TextField
           fullWidth
           label="Actual Result"
-          value={editedStep.actual_result}
-          onChange={handleInputChange('actual_result')}
+          value={actualResult}
+          onChange={(e) => setActualResult(e.target.value)}
           margin="dense"
         />
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose}>Cancel</Button>
-        <Button onClick={handleSave} variant="contained" color="primary">
+        <Button onClick={handleSave} variant="contained">
           Save Changes
         </Button>
       </DialogActions>
