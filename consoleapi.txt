@@ -1,0 +1,22 @@
+fetch("http://127.0.0.1:8000/generate-test-cases-from-us/", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify(payload)
+})
+.then(async response => {
+  const contentType = response.headers.get("content-type");
+  const data = contentType && contentType.includes("application/json")
+    ? await response.json()
+    : await response.text();
+  
+  if (!response.ok) {
+    console.error("❌ API error:", data);
+  } else {
+    console.log("✅ API success:", data);
+  }
+})
+.catch(err => {
+  console.error("🚨 Network error:", err);
+});
