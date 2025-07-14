@@ -1,0 +1,55 @@
+const handleGenerateTestSteps = async () => {
+  const url = new URL("http://127.0.0.1:8000/generate-test-steps-from-tc/");
+
+  // Get all values from current state
+  const params = {
+    test_case_id: selectedTestCaseId,  // pulled from TestCaseList.js
+    user_story_id: selectedUserStoryId,
+    project_id: selectedProjectId,
+    release_id: selectedReleaseId,
+    llm_model_id: selectedLlmModelId,
+  };
+
+  if (selectedPromptId) {
+    params.prompt_id = selectedPromptId;
+  }
+
+  // Handle multi-select for page_object_id
+  pageObjectIds.forEach(id => {
+    url.searchParams.append("page_object_id", id);
+  });
+
+  // Add the required params
+  Object.entries(params).forEach(([key, val]) => {
+    url.searchParams.append(key, val);
+  });
+
+  try {
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        "x-user-soeid": userSoeid,
+      },
+    });
+
+    const contentType = response.headers.get("content-type");
+    const data = contentType?.includes("application/json")
+      ? await response.json()
+      : await response.text();
+
+    if (!response.ok) {
+      console.error("❌ Error generating test steps:", data);
+      setShowErrorMessage(true);
+      setErrorMessage("Failed to generate test steps");
+      setErrorDetails(data.message || "Something went wrong.");
+    } else {
+      console.log("✅ Test steps generated:", data);
+      // Optional: refresh test case details table or show toast
+    }
+  } catch (err) {
+    console.error("❌ Network error:", err);
+    setShowErrorMessage(true);
+    setErrorMessage("Failed to connect");
+    setErrorDetails(err.message);
+  }
+};
